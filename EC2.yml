@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  EnvType:
+    Description: Environment type.
+    Default: stage
+    Type: String
+    AllowedValues: [prod, dev, stage]
+    ConstraintDescription: must specify prod, dev, or stage.
+
+  ProdInstance:
+    Description: ProdInstance
+    Default: m5.large
+    Type: String
+
+  DevInstance:
+    Description: DevInstance
+    Default: t2.micro
+    Type: String
+
+  StageInstance:
+    Description: StageInstance
+    Default: t2.small
+    Type: String
+
+  AmiID:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Description: 'The ID of the AMI.'
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+Conditions:
+  CreateProdResources: !Equals [!Ref EnvType, "prod"]
+  CreateDevResources: !Equals [!Ref EnvType, "dev"]
+  CreateStageResources: !Equals [!Ref EnvType, "stage"]
+
+Resources:
+  EC2Instance:
+    Type: "AWS::EC2::Instance"
+    #Condition: CreateProdResources
+    Properties:
+      ImageId: !Ref AmiID
+      InstanceType: !If [ CreateProdResources, !Ref ProdInstance, !If [CreateDevResources, !Ref DevInstance, !Ref StageInstance ]]
+  # MountPoint:
+  #   Type: "AWS::EC2::VolumeAttachment"
+  #   Condition: CreateProdResources
+  #   Properties:
+  #     InstanceId: !Ref EC2Instance
+  #     VolumeId: !Ref NewVolume
+  #     Device: /dev/sdh
+  # NewVolume:
+  #   Type: "AWS::EC2::Volume"
+  #   Condition: CreateProdResources
+  #   Properties:
+  #     Size: 100
+  #     AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
